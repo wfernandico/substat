@@ -1,0 +1,136 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(reactable)
+library(htmltools)
+library(sparkline)
+
+tab = read.csv('Personview_sessions_converted.csv')
+tab = tab %>%
+  group_by(TIMESTART_in_GMT)
+
+
+dat = read.csv('duration.csv')
+
+data <- dat %>%
+  group_by(TITLE) %>%
+  summarise(DURATION = list(duration)) %>%
+  mutate(DURATION_in_SESSION = NA)
+
+tab = left_join(tab, data)
+
+orange_pal <- function(x) rgb(colorRamp(c("#ffe4cc", "#ff9500"))(x), maxColorValue = 255)
+```
+
+```{r, echo=FALSE, include=FALSE, warning=FALSE}
+t = unique(dat$TITLE)
+
+summary = NULL
+for(i in 1:length(t)){
+  temp = data.frame(summary(dat %>%
+                   filter(TITLE == t[i]) %>%
+                   select(duration)))
+  summary = rbind(summary, temp$Freq)
+}
+
+summary = cbind(t, summary)
+
+colnames(summary) = c(
+  'TITLE',
+  'Minimum',
+  'Lower_Quartile',
+  'Median',
+  'Mean',
+  'Upper_Quartile',
+  'Maximum'
+)
+
+tab = left_join(tab, data.frame(summary))
+```
+
+```{r, echo=FALSE}
+# Render a bar chart with a label on the left
+bar_chart <- function(label, width = "100%", height = "16px", fill = "#00bfc4", background = NULL) {
+  bar <- div(style = list(background = fill, width = width, height = height))
+  chart <- div(style = list(flexGrow = 1, marginLeft = "8px", background = background), bar)
+  div(style = list(display = "flex", alignItems = "center"), label, chart)
+}
+
+reactable(
+  tab[,c(1:5)],
+  groupBy = "TIMESTART_in_GMT",
+  resizable = TRUE,
+  defaultPageSize = 20,
+  columns = list(
+    ATTENDEES = colDef(aggregate = "sum", cell = function(value) {
+      width <- paste0(value / max(tab$ATTENDEES) * 100, "%")
+      bar_chart(value, width = width, fill = "#fc5185", background = "#e1e1e1")
+    }),
+    CATEGORY = colDef(cell = function(value) {
+    class <- paste0("tag category-", tolower(value))
+    div(class = class, value)
+    }),
+    DURATION = colDef(
+    details =  function(index) {
+      paste(tab[index, "Minimum"], tab[index, "Median"], tab[index, "Maximum"], collapse = "\t")
+    },
+    cell = function(values) {
+    sparkline(values, type = "bar", chartRangeMin = 0, chartRangeMax = max(dat$duration))
+    })
+  ), filterable = TRUE)
+```
+
+```{r}
+
+
+```
+
+```{css, echo=FALSE}
+.tag {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 15px;
+  font-DURATION_in_SESSION: 600;
+  font-size: 12px;
+}
+.category-continuous_improvement {
+  background: hsl(78, 98%, 30%);
+  color: hsl(78, 30%, 25%);
+}
+.category-assessment {
+  background: hsl(230, 70%, 90%);
+  color: hsl(230, 45%, 30%);
+}
+.category-panel {
+  background: hsl(350, 70%, 90%);
+  color: hsl(350, 45%, 30%);
+}
+.category-keynote {
+  background: hsl(116, 30%, 45%);
+  color: hsl(116, 60%, 70%);
+}
+.category-early_learning {
+  background: hsl(104, 90%, 70%);
+  color: hsl(104, 45%, 30%);
+}
+.category-instructional_strategies {
+  background: hsl(29, 85%, 65%);
+  color: hsl(29, 45%, 30%);
+}
+.category-stem {
+  background: hsl(394, 20%, 85%);
+  color: hsl(394, 60%, 70%);
+}
+.category-digital {
+  background: hsl(492, 40%, 94%);
+  color: hsl(492, 45%, 30%);
+}
+.category-strategic_thinking {
+  background: hsl(934, 39%, 94%);
+  color: hsl(934, 30%, 90%);
+}
+```
