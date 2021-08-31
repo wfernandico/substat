@@ -1,0 +1,157 @@
+---
+title: "Webcast Report"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: rows
+runtime: shiny  # Make this use a Shiny backend
+---
+
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(flexdashboard)
+library(plotly)
+library(rvest)
+library(stringi)
+library(googlesheets4)
+
+url <- 'https://media.forj.ai/tools/export/booth/winona/get-webcast-participants.php?show_id=1625586301676'
+
+# Make googlesheets4 not try to authenticate, since we're using a public sheet
+gs4_deauth()
+```
+
+```{r get-data, message=FALSE, include=FALSE}
+con <- url(url, "rb", method = "libcurl")
+webpage <- read_html(con)
+
+live <-webpage %>%
+  html_nodes("p") %>%
+  html_text()
+
+library(stringi)
+
+live = stri_split_fixed(live, '\"')
+live = live[[1]]
+
+index = which(live != "}]\r\n" &
+              live != ":" &
+              live != "," &
+              live != "},{" &
+              live != "[{"  &
+              live != "}]")
+
+live = live[index]
+live = matrix(live, ncol = 2, byrow = TRUE)
+
+Name = grep(" ", live[,2], value = T)
+Email = grep("@", live[,2], value = T)
+
+live = data.frame(Name, Email)
+
+load_remote_data <- function() {
+  read_sheet("1ndxUDgcpv-2TwN3aL4YpCU8cKPgoej5G4hWmhA1y-Zc")
+}
+
+remote_data <- load_remote_data()
+```
+
+## Row
+
+### Live Participants {.value-box}
+
+```{r}
+n_categories <- remote_data %>% distinct(Category) %>% nrow()
+
+# Put valueBox() inside renderValueBox({})
+renderValueBox({
+  valueBox(value = n_categories, icon = "fas fa-users")
+})
+```
+
+
+### Archived Participants {.value-box}
+
+```{r}
+total <- sum(remote_data$Count)
+
+# Put valueBox() inside renderValueBox({})
+renderValueBox({
+  valueBox(value = total, icon = "fas fa-users")
+})
+```
+
+### Unique Participants {.value-box}
+
+```{r}
+unique <-n_distinct(live$Email)
+
+# Put valueBox() inside renderValueBox({})
+renderValueBox({
+  valueBox(value = unique, icon = "fas fa-users")
+})
+```
+
+## Row
+
+###
+
+```{r}
+my_plot <- ggplot(remote_data, aes(x = Category, y = Count)) +
+  geom_col(aes(text = Count)) +
+  theme_minimal()
+
+# Put ggplotly() inside renderPlotly({})
+renderPlotly({
+  ggplotly(my_plot, tooltip = "text")
+})
+```
+
+###
+
+```{r}
+my_plot <- ggplot(remote_data, aes(x = Category, y = Count)) +
+  geom_col(aes(text = Count)) +
+  theme_minimal()
+
+# Put ggplotly() inside renderPlotly({})
+renderPlotly({
+  ggplotly(my_plot, tooltip = "text")
+})
+```
+
+###
+
+```{r}
+renderDataTable({
+  distinct(live)
+})
+```
+
+## Row
+
+###
+
+```{r}
+my_plot <- ggplot(remote_data, aes(x = Category, y = Count)) +
+  geom_col(aes(text = Count)) +
+  theme_minimal()
+
+# Put ggplotly() inside renderPlotly({})
+renderPlotly({
+  ggplotly(my_plot, tooltip = "text")
+})
+```
+
+###
+
+```{r}
+my_plot <- ggplot(remote_data, aes(x = Category, y = Count)) +
+  geom_col(aes(text = Count)) +
+  theme_minimal()
+
+# Put ggplotly() inside renderPlotly({})
+renderPlotly({
+  ggplotly(my_plot, tooltip = "text")
+})
+```
