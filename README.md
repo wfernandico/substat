@@ -17,7 +17,11 @@ TARGET_CONFIG_ID references ETR_TARGET_CONFIGHRCOM.<br>
 INITIATOR_CONFIG_ID references ETR_INITIATOR_CONFIGHRCOM.<br>
 ACTION_CONFIG_ID references ETR_ACTION_CONFIGHRCOM.<br>
 Consider tying this to: ETR_INITIATOR_SUMHRCOM
+
 ##### ETR_EVENT_LOGHRCOM
+Registers page activity/traffic in the tradeshow.<br>
+TARGET_ID is equivalent to the TRADESHOW_ID.
+
 ##### ETR_EVENT_SUMHRCOM
 
 #### ETR_INITIATOR_CNTHRCOM
